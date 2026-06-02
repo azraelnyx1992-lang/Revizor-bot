@@ -1,6 +1,7 @@
 import requests
 import time
 import json
+import sqlite3
 
 TOKEN = "8899449640:AAFuYGws8VbMoNmTb8apSQCqZngSn73k_PY"
 
@@ -9,6 +10,33 @@ URL = f"https://api.telegram.org/bot{TOKEN}/"
 offset = None
 
 print("БОТ ЗАПУЩЕН ✅")
+
+
+# БАЗА ПОЛЬЗОВАТЕЛЕЙ
+conn = sqlite3.connect("users.db", check_same_thread=False)
+
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY
+)
+""")
+
+conn.commit()
+
+
+# СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ
+def save_user(user_id):
+
+    cursor.execute(
+        "INSERT OR IGNORE INTO users (user_id) VALUES (?)",
+        (user_id,)
+    )
+
+    conn.commit()
+
+    print("СОХРАНЕН:", user_id)
 
 
 # МЕНЮ ТОЛЬКО В ЛС
@@ -65,6 +93,36 @@ def send_post(chat_id):
     )
 
 
+# РАССЫЛКА
+def broadcast_message(text):
+
+    cursor.execute("SELECT user_id FROM users")
+
+    users = cursor.fetchall()
+
+    for user in users:
+
+        user_id = user[0]
+
+        try:
+
+            requests.post(
+                URL + "sendMessage",
+                data={
+                    "chat_id": user_id,
+                    "text": text
+                }
+            )
+
+            print("ОТПРАВЛЕНО:", user_id)
+
+            time.sleep(0.3)
+
+        except Exception as e:
+
+            print("ОШИБКА:", e)
+
+
 # ГЛАВНЫЙ ЦИКЛ
 while True:
 
@@ -96,20 +154,51 @@ while True:
 
                 print("Сообщение:", text)
 
-                # /start ТОЛЬКО В ЛС
+                # /start
                 if text == "/start":
 
                     if chat_type == "private":
 
+                        save_user(chat_id)
+
                         send_menu(chat_id)
 
-                # КНОПКА МЕНЮ
+                # КНОПКА
                 elif text == "📌Закреп📌":
 
-                    # ТОЛЬКО В ЛС
                     if chat_type == "private":
 
                         send_post(chat_id)
+
+                # РАССЫЛКА ТОЛЬКО ДЛЯ ТЕБЯ
+                elif text.startswith("/send"):
+
+                    if chat_id == 8248506377:
+
+                        msg = text.replace("/send", "").strip()
+
+                        if msg:
+
+                            broadcast_message(msg)
+
+                            requests.post(
+                                URL + "sendMessage",
+                                data={
+                                    "chat_id": chat_id,
+                                    "text": "✅ Рассылка отправлена"
+                                }
+                            )
+
+                # ЛЮБОЕ ДРУГОЕ СООБЩЕНИЕ
+                else:
+
+                    requests.post(
+                        URL + "sendMessage",
+                        data={
+                            "chat_id": chat_id,
+                            "text": "Для начала работы нажмите /start"
+                        }
+                    )
 
         time.sleep(1)
 
