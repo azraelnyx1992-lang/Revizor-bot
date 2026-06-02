@@ -32,14 +32,35 @@ def send_menu(chat_id):
     )
 
 
-# ОТПРАВКА САЙТА
-def send_site(chat_id):
+# ПОСТ С ФОТО И КНОПКОЙ
+def send_post(chat_id):
+
+    caption = (
+        "😭 Устал от фейков? 😭\n"
+        "❓Опять Мунтян предлагает в ЛС ровный шоп❓\n"
+        "🚀 Пользуйся только проверенными магазинами 🚀\n"
+        "💀Донецкий Ревизор 💀\n"
+        "🌐 Все настоящие контакты на сайте 🌐\n"
+        "⚠️ Не ведитесь на фейков ⚠️\n"
+        "📌 Revizor.cc 📌"
+    )
+
+    keyboard = {
+        "inline_keyboard": [[
+            {
+                "text": "📎Revizor.cc📎",
+                "url": "https://revizor.cc"
+            }
+        ]]
+    }
 
     requests.post(
-        URL + "sendMessage",
+        URL + "sendPhoto",
         data={
             "chat_id": chat_id,
-            "text": "🌐 https://revizor.cc"
+            "photo": "https://i.ibb.co/21crjLB5/IMG-20260522-221607-203.jpg",
+            "caption": caption,
+            "reply_markup": json.dumps(keyboard)
         }
     )
 
@@ -85,10 +106,10 @@ while True:
                 # КНОПКА МЕНЮ
                 elif text == "📌Закреп📌":
 
-                    # РАБОТАЕТ ТОЛЬКО В ЛС
+                    # ТОЛЬКО В ЛС
                     if chat_type == "private":
 
-                        send_site(chat_id)
+                        send_post(chat_id)
 
         time.sleep(1)
 
