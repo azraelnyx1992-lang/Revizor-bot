@@ -11,7 +11,7 @@ offset = None
 print("БОТ ЗАПУЩЕН ✅")
 
 
-# МЕНЮ (ТОЛЬКО В ЛС)
+# МЕНЮ ТОЛЬКО ДЛЯ ЛС
 def send_menu(chat_id):
 
     keyboard = {
@@ -92,37 +92,20 @@ while True:
 
                 chat_id = message["chat"]["id"]
 
-                text = message.get("text", "")
-
                 chat_type = message["chat"]["type"]
 
-                user_id = message["from"]["id"]
+                text = message.get("text", "")
 
                 print("Сообщение:", text)
 
-                # /start
+                # /start ТОЛЬКО В ЛС
                 if text == "/start":
 
-                    # ЕСЛИ ГРУППА/ЧАТ
-                    if chat_type != "private":
+                    if chat_type == "private":
 
-                        # В ЧАТ БЕЗ КНОПКИ
-                        requests.post(
-                            URL + "sendMessage",
-                            data={
-                                "chat_id": chat_id,
-                                "text": "📩 Проверь личные сообщения"
-                            }
-                        )
+                        send_menu(chat_id)
 
-                        # КНОПКА ТОЛЬКО В ЛС
-                        send_menu(user_id)
-
-                    else:
-                        # ЕСЛИ УЖЕ ЛС
-                        send_menu(user_id)
-
-            # НАЖАТИЕ INLINE КНОПКИ
+            # INLINE КНОПКИ
             if "callback_query" in update:
 
                 callback = update["callback_query"]
@@ -133,12 +116,12 @@ while True:
 
                 print("Нажата кнопка:", data_btn)
 
-                # ОТПРАВКА ПОСТА В ЛС
+                # ОТПРАВИТЬ ПОСТ
                 if data_btn == "open_post":
 
                     send_post(user_id)
 
-                    # УБИРАЕМ ЧАСИК НА КНОПКЕ
+                    # УБРАТЬ ЧАСИК
                     requests.post(
                         URL + "answerCallbackQuery",
                         data={
