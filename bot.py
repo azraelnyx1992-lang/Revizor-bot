@@ -11,24 +11,35 @@ offset = None
 print("БОТ ЗАПУЩЕН ✅")
 
 
-# МЕНЮ ТОЛЬКО ДЛЯ ЛС
+# МЕНЮ ТОЛЬКО В ЛС
 def send_menu(chat_id):
 
     keyboard = {
-        "inline_keyboard": [[
-            {
-                "text": "📌Закреп📌",
-                "url": "https://revizor.cc"
-            }
-        ]]
+        "keyboard": [
+            [{"text": "📌Закреп📌"}]
+        ],
+        "resize_keyboard": True,
+        "persistent": True
     }
 
     requests.post(
         URL + "sendMessage",
         data={
             "chat_id": chat_id,
-            "text": "👇 Нажми кнопку ниже 👇",
+            "text": "👇 Кнопка меню снизу 👇",
             "reply_markup": json.dumps(keyboard)
+        }
+    )
+
+
+# ОТПРАВКА САЙТА
+def send_site(chat_id):
+
+    requests.post(
+        URL + "sendMessage",
+        data={
+            "chat_id": chat_id,
+            "text": "🌐 https://revizor.cc"
         }
     )
 
@@ -52,7 +63,6 @@ while True:
 
             offset = update["update_id"] + 1
 
-            # ОБЫЧНЫЕ СООБЩЕНИЯ
             if "message" in update:
 
                 message = update["message"]
@@ -71,6 +81,14 @@ while True:
                     if chat_type == "private":
 
                         send_menu(chat_id)
+
+                # КНОПКА МЕНЮ
+                elif text == "📌Закреп📌":
+
+                    # РАБОТАЕТ ТОЛЬКО В ЛС
+                    if chat_type == "private":
+
+                        send_site(chat_id)
 
         time.sleep(1)
 
