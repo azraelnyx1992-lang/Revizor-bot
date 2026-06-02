@@ -303,4 +303,3 @@ while True:
         print("ОШИБКА:", e)
 
         time.sleep(5)
-```
