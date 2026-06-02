@@ -18,7 +18,7 @@ def send_menu(chat_id):
         "inline_keyboard": [[
             {
                 "text": "📌Закреп📌",
-                "callback_data": "open_post"
+                "url": "https://revizor.cc"
             }
         ]]
     }
@@ -28,39 +28,6 @@ def send_menu(chat_id):
         data={
             "chat_id": chat_id,
             "text": "👇 Нажми кнопку ниже 👇",
-            "reply_markup": json.dumps(keyboard)
-        }
-    )
-
-
-# ПОСТ
-def send_post(chat_id):
-
-    caption = (
-        "😭 Устал от фейков? 😭\n"
-        "❓Опять Мунтян предлагает в ЛС ровный шоп❓\n"
-        "🚀 Пользуйся только проверенными магазинами 🚀\n"
-        "💀Донецкий Ревизор 💀\n"
-        "🌐 Все настоящие контакты на сайте 🌐\n"
-        "⚠️ Не ведитесь на фейков ⚠️\n"
-        "📌 Revizor.cc 📌"
-    )
-
-    keyboard = {
-        "inline_keyboard": [[
-            {
-                "text": "📎Revizor.cc📎",
-                "url": "https://revizor.cc"
-            }
-        ]]
-    }
-
-    requests.post(
-        URL + "sendPhoto",
-        data={
-            "chat_id": chat_id,
-            "photo": "https://i.ibb.co/21crjLB5/IMG-20260522-221607-203.jpg",
-            "caption": caption,
             "reply_markup": json.dumps(keyboard)
         }
     )
@@ -104,30 +71,6 @@ while True:
                     if chat_type == "private":
 
                         send_menu(chat_id)
-
-            # INLINE КНОПКИ
-            if "callback_query" in update:
-
-                callback = update["callback_query"]
-
-                data_btn = callback["data"]
-
-                user_id = callback["from"]["id"]
-
-                print("Нажата кнопка:", data_btn)
-
-                # ОТПРАВИТЬ ПОСТ
-                if data_btn == "open_post":
-
-                    send_post(user_id)
-
-                    # УБРАТЬ ЧАСИК
-                    requests.post(
-                        URL + "answerCallbackQuery",
-                        data={
-                            "callback_query_id": callback["id"]
-                        }
-                    )
 
         time.sleep(1)
 
