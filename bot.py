@@ -2,7 +2,7 @@ import requests
 import time
 import json
 
-TOKEN = "8899449640:AAFuYGws8VbMoNmTb8apSQCqZngSn73k_PY"
+TOKEN = "ТВОЙ_ТОКЕН"
 
 URL = f"https://api.telegram.org/bot{TOKEN}/"
 
@@ -11,21 +11,23 @@ offset = None
 print("БОТ ЗАПУЩЕН ✅")
 
 
-# МЕНЮ
+# МЕНЮ С INLINE КНОПКОЙ
 def send_menu(chat_id):
 
     keyboard = {
-        "keyboard": [
-            [{"text": "📌Закреп📌"}]
-        ],
-        "resize_keyboard": True
+        "inline_keyboard": [[
+            {
+                "text": "📌Закреп📌",
+                "callback_data": "open_post"
+            }
+        ]]
     }
 
     requests.post(
         URL + "sendMessage",
         data={
             "chat_id": chat_id,
-            "text": "👇 Нужно нажать кнопку снизу 👇",
+            "text": "👇 Нажми кнопку ниже 👇",
             "reply_markup": json.dumps(keyboard)
         }
     )
@@ -83,6 +85,7 @@ while True:
 
             offset = update["update_id"] + 1
 
+            # ОБЫЧНЫЕ СООБЩЕНИЯ
             if "message" in update:
 
                 message = update["message"]
@@ -98,10 +101,29 @@ while True:
 
                     send_menu(chat_id)
 
-                # КНОПКА
-                elif text == "📌Закреп📌":
+            # НАЖАТИЕ INLINE КНОПКИ
+            if "callback_query" in update:
 
-                    send_post(chat_id)
+                callback = update["callback_query"]
+
+                data_btn = callback["data"]
+
+                user_id = callback["from"]["id"]
+
+                print("Нажата кнопка:", data_btn)
+
+                # ОТПРАВКА ПОСТА В ЛС
+                if data_btn == "open_post":
+
+                    send_post(user_id)
+
+                    # УБИРАЕМ ЧАСИК НА КНОПКЕ
+                    requests.post(
+                        URL + "answerCallbackQuery",
+                        data={
+                            "callback_query_id": callback["id"]
+                        }
+                    )
 
         time.sleep(1)
 
