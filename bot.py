@@ -30,7 +30,7 @@ conn.commit()
 last_message = {}
 
 
-# СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ
+# СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЕЙ (ВСЕХ)
 def save_user(user_id, username, first_name):
     cursor.execute("""
         INSERT OR IGNORE INTO users
@@ -43,10 +43,7 @@ def save_user(user_id, username, first_name):
 
 
 def remove_user(user_id):
-    cursor.execute(
-        "DELETE FROM users WHERE user_id = ?",
-        (user_id,)
-    )
+    cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
     conn.commit()
     print("УДАЛЕН:", user_id)
 
@@ -139,9 +136,7 @@ def broadcast_message(text):
                 }
             )
 
-            data = response.json()
-
-            if not data["ok"]:
+            if not response.json().get("ok"):
                 remove_user(user_id)
             else:
                 success += 1
@@ -181,7 +176,10 @@ while True:
 
             print("СООБЩЕНИЕ:", text)
 
-            # 🔥 ГЛАВНОЕ ИСПРАВЛЕНИЕ
+            # 🔥 СОХРАНЯЕМ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ (как ты хотел)
+            save_user(chat_id, username, first_name)
+
+            # 🔴 ГРУППЫ ИГНОРИРУЕМ ПОЛНОСТЬЮ
             if chat_type != "private":
                 continue
 
@@ -192,16 +190,15 @@ while True:
                     continue
             last_message[chat_id] = now
 
-            # СОХРАНЕНИЕ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
-            save_user(chat_id, username, first_name)
-
             # /start
             if text == "/start":
                 send_menu(chat_id)
 
+            # КНОПКА
             elif text == "📌Закреп📌":
                 send_post(chat_id)
 
+            # РАССЫЛКА
             elif text.startswith("/send") and chat_id == ADMIN_ID:
                 msg = text.replace("/send", "").strip()
 
@@ -215,6 +212,7 @@ while True:
                         }
                     )
 
+            # СТАТИСТИКА
             elif text == "/stats" and chat_id == ADMIN_ID:
                 count = get_stats()
                 requests.post(
@@ -222,6 +220,16 @@ while True:
                     data={
                         "chat_id": chat_id,
                         "text": f"👥 Пользователей: {count}"
+                    }
+                )
+
+            # ❗ НЕПРАВИЛЬНЫЕ СООБЩЕНИЯ В ЛС
+            else:
+                requests.post(
+                    URL + "sendMessage",
+                    data={
+                        "chat_id": chat_id,
+                        "text": "Для начала работы нажмите /start"
                     }
                 )
 
