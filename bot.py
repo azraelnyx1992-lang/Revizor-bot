@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name TEXT
 )
 """)
+
 conn.commit()
 
 # АНТИСПАМ
@@ -41,20 +42,21 @@ def save_user(user_id, username, first_name):
     print("СОХРАНЕН:", user_id)
 
 
-# УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
 def remove_user(user_id):
-    cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+    cursor.execute(
+        "DELETE FROM users WHERE user_id = ?",
+        (user_id,)
+    )
     conn.commit()
     print("УДАЛЕН:", user_id)
 
 
-# СТАТИСТИКА
 def get_stats():
     cursor.execute("SELECT COUNT(*) FROM users")
     return cursor.fetchone()[0]
 
 
-# МЕНЮ
+# МЕНЮ (ТВОЙ ТЕКСТ 1:1)
 def send_menu(chat_id):
     keyboard = {
         "keyboard": [
@@ -66,8 +68,12 @@ def send_menu(chat_id):
 
     text = (
         "👋 <b>Привет</b>\n"
-        "💀 <b>Донецкий Ревизор</b> 💀\n"
-        "👉 Revizor.cc"
+        "Ты написал оригинальному боту лучшей ДНР площадки "
+        "💀<b>Донецкий Ревизор</b>💀\n"
+        "Проверь оригинальность на сайте\n"
+        "👉 Revizor.cc\n"
+        "Для 100% результата введи сайт вручную в браузере.\n"
+        "👇Нажми кнопку ниже чтобы получить доверенные магазины👇"
     )
 
     requests.post(
@@ -81,17 +87,22 @@ def send_menu(chat_id):
     )
 
 
-# ПОСТ
+# ПОСТ (ТВОЙ ТЕКСТ 1:1)
 def send_post(chat_id):
     caption = (
+        "😭 <b>Устал от фейков?</b> 😭\n"
+        "❓Опять Мунтян предлагает в ЛС ровный шоп❓\n"
+        "🚀 Пользуйся только проверенными магазинами 🚀\n"
         "💀 <b>Донецкий Ревизор</b> 💀\n"
-        "🌐 Revizor.cc"
+        "🌐 Все настоящие контакты на сайте 🌐\n"
+        "⚠️ Не ведитесь на фейков ⚠️\n"
+        "📌 Revizor.cc 📌"
     )
 
     keyboard = {
         "inline_keyboard": [[
             {
-                "text": "📎 Открыть сайт",
+                "text": "📎Revizor.cc📎",
                 "url": "https://revizor.cc"
             }
         ]]
@@ -109,7 +120,6 @@ def send_post(chat_id):
     )
 
 
-# РАССЫЛКА
 def broadcast_message(text):
     cursor.execute("SELECT user_id FROM users")
     users = cursor.fetchall()
@@ -131,12 +141,11 @@ def broadcast_message(text):
 
             data = response.json()
 
-            if not data.get("ok"):
+            if not data["ok"]:
                 remove_user(user_id)
             else:
                 success += 1
 
-            print("ОТПРАВЛЕНО:", user_id)
             time.sleep(0.3)
 
         except Exception as e:
@@ -150,10 +159,7 @@ while True:
     try:
         response = requests.get(
             URL + "getUpdates",
-            params={
-                "offset": offset,
-                "timeout": 30
-            }
+            params={"offset": offset, "timeout": 30}
         )
 
         data = response.json()
@@ -175,7 +181,7 @@ while True:
 
             print("СООБЩЕНИЕ:", text)
 
-            # 🔥 ВАЖНО: игнорируем ВСЕ группы / супергруппы / каналы
+            # 🔥 ГЛАВНОЕ ИСПРАВЛЕНИЕ
             if chat_type != "private":
                 continue
 
@@ -193,17 +199,14 @@ while True:
             if text == "/start":
                 send_menu(chat_id)
 
-            # КНОПКА
             elif text == "📌Закреп📌":
                 send_post(chat_id)
 
-            # РАССЫЛКА
             elif text.startswith("/send") and chat_id == ADMIN_ID:
                 msg = text.replace("/send", "").strip()
 
                 if msg:
                     total = broadcast_message(msg)
-
                     requests.post(
                         URL + "sendMessage",
                         data={
@@ -212,10 +215,8 @@ while True:
                         }
                     )
 
-            # СТАТИСТИКА
             elif text == "/stats" and chat_id == ADMIN_ID:
                 count = get_stats()
-
                 requests.post(
                     URL + "sendMessage",
                     data={
@@ -223,8 +224,6 @@ while True:
                         "text": f"👥 Пользователей: {count}"
                     }
                 )
-
-            # ❌ НИКАКОГО ELSE — НЕТ СПАМА
 
         time.sleep(1)
 
