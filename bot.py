@@ -12,7 +12,7 @@ ADMIN_ID = 8248506377
 
 print("БОТ ЗАПУЩЕН ✅")
 
-# DB
+# БАЗА ДАННЫХ
 conn = sqlite3.connect("users.db", check_same_thread=False)
 cursor = conn.cursor()
 
@@ -25,44 +25,43 @@ CREATE TABLE IF NOT EXISTS users (
 """)
 conn.commit()
 
+# АНТИСПАМ
 last_message = {}
 
-# СОХРАНЕНИЕ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
+
+# СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ
 def save_user(user_id, username, first_name):
     cursor.execute("""
-        INSERT OR IGNORE INTO users (user_id, username, first_name)
+        INSERT OR IGNORE INTO users
+        (user_id, username, first_name)
         VALUES (?, ?, ?)
     """, (user_id, username, first_name))
+
     conn.commit()
+    print("СОХРАНЕН:", user_id)
 
 
+# УДАЛЕНИЕ ПОЛЬЗОВАТЕЛЯ
 def remove_user(user_id):
     cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
     conn.commit()
+    print("УДАЛЕН:", user_id)
 
 
+# СТАТИСТИКА
 def get_stats():
     cursor.execute("SELECT COUNT(*) FROM users")
     return cursor.fetchone()[0]
 
 
-def send_message(chat_id, text, reply_markup=None):
-    data = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "HTML"
-    }
-
-    if reply_markup:
-        data["reply_markup"] = json.dumps(reply_markup)
-
-    requests.post(URL + "sendMessage", data=data)
-
-
+# МЕНЮ
 def send_menu(chat_id):
     keyboard = {
-        "keyboard": [[{"text": "📌Закреп📌"}]],
-        "resize_keyboard": True
+        "keyboard": [
+            [{"text": "📌Закреп📌"}]
+        ],
+        "resize_keyboard": True,
+        "persistent": True
     }
 
     text = (
@@ -71,9 +70,18 @@ def send_menu(chat_id):
         "👉 Revizor.cc"
     )
 
-    send_message(chat_id, text, keyboard)
+    requests.post(
+        URL + "sendMessage",
+        data={
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "reply_markup": json.dumps(keyboard)
+        }
+    )
 
 
+# ПОСТ
 def send_post(chat_id):
     caption = (
         "💀 <b>Донецкий Ревизор</b> 💀\n"
@@ -82,7 +90,10 @@ def send_post(chat_id):
 
     keyboard = {
         "inline_keyboard": [[
-            {"text": "📎 Открыть сайт", "url": "https://revizor.cc"}
+            {
+                "text": "📎 Открыть сайт",
+                "url": "https://revizor.cc"
+            }
         ]]
     }
 
@@ -98,91 +109,125 @@ def send_post(chat_id):
     )
 
 
-def broadcast(text):
+# РАССЫЛКА
+def broadcast_message(text):
     cursor.execute("SELECT user_id FROM users")
     users = cursor.fetchall()
 
     success = 0
 
-    for (user_id,) in users:
+    for user in users:
+        user_id = user[0]
+
         try:
-            r = requests.post(URL + "sendMessage", data={
-                "chat_id": user_id,
-                "text": text,
-                "parse_mode": "HTML"
-            })
+            response = requests.post(
+                URL + "sendMessage",
+                data={
+                    "chat_id": user_id,
+                    "text": text,
+                    "parse_mode": "HTML"
+                }
+            )
 
-            if r.json().get("ok"):
-                success += 1
-            else:
+            data = response.json()
+
+            if not data.get("ok"):
                 remove_user(user_id)
+            else:
+                success += 1
 
+            print("ОТПРАВЛЕНО:", user_id)
             time.sleep(0.3)
 
-        except:
-            pass
+        except Exception as e:
+            print("ОШИБКА:", e)
 
     return success
 
 
-print("БОТ РАБОТАЕТ...")
-
+# ГЛАВНЫЙ ЦИКЛ
 while True:
     try:
         response = requests.get(
             URL + "getUpdates",
-            params={"offset": offset, "timeout": 30}
+            params={
+                "offset": offset,
+                "timeout": 30
+            }
         )
 
         data = response.json()
 
-        for update in data["result"]:
+        for update in data.get("result", []):
             offset = update["update_id"] + 1
 
             if "message" not in update:
                 continue
 
-            msg = update["message"]
+            message = update["message"]
 
-            chat_id = msg["chat"]["id"]
-            chat_type = msg["chat"]["type"]
-            text = msg.get("text", "")
-            username = msg["from"].get("username", "")
-            first_name = msg["from"].get("first_name", "")
+            chat_id = message["chat"]["id"]
+            chat_type = message["chat"]["type"]
+            text = message.get("text", "")
 
-            # антиспам
-            now = time.time()
-            if chat_id in last_message and now - last_message[chat_id] < 1.5:
+            username = message["from"].get("username", "")
+            first_name = message["from"].get("first_name", "")
+
+            print("СООБЩЕНИЕ:", text)
+
+            # 🔥 ВАЖНО: игнорируем ВСЕ группы / супергруппы / каналы
+            if chat_type != "private":
                 continue
+
+            # АНТИСПАМ
+            now = time.time()
+            if chat_id in last_message:
+                if now - last_message[chat_id] < 2:
+                    continue
             last_message[chat_id] = now
 
-            # 🔥 ВАЖНО: сохраняем ВСЕХ пользователей при любом сообщении
-            if chat_type == "private":
-                save_user(chat_id, username, first_name)
+            # СОХРАНЕНИЕ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ
+            save_user(chat_id, username, first_name)
 
             # /start
-            if text == "/start" and chat_type == "private":
+            if text == "/start":
                 send_menu(chat_id)
 
-            # кнопка
-            elif text == "📌Закреп📌" and chat_type == "private":
+            # КНОПКА
+            elif text == "📌Закреп📌":
                 send_post(chat_id)
 
-            # админ рассылка
+            # РАССЫЛКА
             elif text.startswith("/send") and chat_id == ADMIN_ID:
-                msg_text = text.replace("/send", "").strip()
-                if msg_text:
-                    count = broadcast(msg_text)
-                    send_message(chat_id, f"✅ Отправлено: {count}")
+                msg = text.replace("/send", "").strip()
 
-            # статистика
+                if msg:
+                    total = broadcast_message(msg)
+
+                    requests.post(
+                        URL + "sendMessage",
+                        data={
+                            "chat_id": chat_id,
+                            "text": f"✅ Рассылка отправлена: {total}",
+                        }
+                    )
+
+            # СТАТИСТИКА
             elif text == "/stats" and chat_id == ADMIN_ID:
-                send_message(chat_id, f"👥 Пользователей: {get_stats()}")
+                count = get_stats()
 
-            # ❌ НИКАКОГО ELSE СПАМА НЕТ
+                requests.post(
+                    URL + "sendMessage",
+                    data={
+                        "chat_id": chat_id,
+                        "text": f"👥 Пользователей: {count}"
+                    }
+                )
+
+            # ❌ НИКАКОГО ELSE — НЕТ СПАМА
 
         time.sleep(1)
 
     except Exception as e:
-        print("ERROR:", e)
+        print("ОШИБКА:", e)
         time.sleep(5)
