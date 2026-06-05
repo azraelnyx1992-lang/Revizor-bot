@@ -30,7 +30,7 @@ conn.commit()
 last_message = {}
 
 
-# СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЕЙ (ВСЕХ)
+# СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЯ
 def save_user(user_id, username, first_name):
     cursor.execute("""
         INSERT OR IGNORE INTO users
@@ -43,7 +43,10 @@ def save_user(user_id, username, first_name):
 
 
 def remove_user(user_id):
-    cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+    cursor.execute(
+        "DELETE FROM users WHERE user_id = ?",
+        (user_id,)
+    )
     conn.commit()
     print("УДАЛЕН:", user_id)
 
@@ -53,7 +56,7 @@ def get_stats():
     return cursor.fetchone()[0]
 
 
-# МЕНЮ (ТВОЙ ТЕКСТ 1:1)
+# МЕНЮ
 def send_menu(chat_id):
     keyboard = {
         "keyboard": [
@@ -84,7 +87,7 @@ def send_menu(chat_id):
     )
 
 
-# ПОСТ (ТВОЙ ТЕКСТ 1:1)
+# ПОСТ
 def send_post(chat_id):
     caption = (
         "😭 <b>Устал от фейков?</b> 😭\n"
@@ -117,6 +120,7 @@ def send_post(chat_id):
     )
 
 
+# ОБЫЧНАЯ РАССЫЛКА
 def broadcast_message(text):
     cursor.execute("SELECT user_id FROM users")
     users = cursor.fetchall()
@@ -136,7 +140,9 @@ def broadcast_message(text):
                 }
             )
 
-            if not response.json().get("ok"):
+            data = response.json()
+
+            if not data["ok"]:
                 remove_user(user_id)
             else:
                 success += 1
@@ -147,6 +153,84 @@ def broadcast_message(text):
             print("ОШИБКА:", e)
 
     return success
+
+
+# COPYMESSAGE РАССЫЛКА
+def broadcast_copy_message(from_chat_id, message_id):
+    cursor.execute("SELECT user_id FROM users")
+    users = cursor.fetchall()
+
+    success = 0
+
+    for user in users:
+        user_id = user[0]
+
+        try:
+            response = requests.post(
+                URL + "copyMessage",
+                data={
+                    "chat_id": user_id,
+                    "from_chat_id": from_chat_id,
+                    "message_id": message_id
+                }
+            )
+
+            data = response.json()
+
+            if not data["ok"]:
+                remove_user(user_id)
+            else:
+                success += 1
+
+            time.sleep(0.3)
+
+        except Exception as e:
+            print("ОШИБКА:", e)
+
+    return success
+
+
+# ОТПРАВКА ТЕКСТА ПО ID
+def send_to_user(user_id, text):
+    try:
+        response = requests.post(
+            URL + "sendMessage",
+            data={
+                "chat_id": user_id,
+                "text": text,
+                "parse_mode": "HTML"
+            }
+        )
+
+        data = response.json()
+
+        return data["ok"]
+
+    except Exception as e:
+        print("ОШИБКА:", e)
+        return False
+
+
+# COPYMESSAGE ПО ID
+def copy_message_to_user(target_id, from_chat_id, message_id):
+
+    try:
+        response = requests.post(
+            URL + "copyMessage",
+            data={
+                "chat_id": target_id,
+                "from_chat_id": from_chat_id,
+                "message_id": message_id
+            }
+        )
+
+        data = response.json()
+
+        return data["ok"]
+
+    except Exception as e:
+        print("ОШИБКА:", e)
+        return False
 
 
 # ГЛАВНЫЙ ЦИКЛ
@@ -170,25 +254,28 @@ while True:
             chat_id = message["chat"]["id"]
             chat_type = message["chat"]["type"]
             text = message.get("text", "")
+            message_id = message["message_id"]
 
             username = message["from"].get("username", "")
             first_name = message["from"].get("first_name", "")
 
             print("СООБЩЕНИЕ:", text)
 
-            # 🔥 СОХРАНЯЕМ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ (как ты хотел)
-            save_user(chat_id, username, first_name)
-
-            # 🔴 ГРУППЫ ИГНОРИРУЕМ ПОЛНОСТЬЮ
+            # ТОЛЬКО ЛС
             if chat_type != "private":
                 continue
 
             # АНТИСПАМ
             now = time.time()
+
             if chat_id in last_message:
                 if now - last_message[chat_id] < 2:
                     continue
+
             last_message[chat_id] = now
+
+            # СОХРАНЕНИЕ ПОЛЬЗОВАТЕЛЕЙ
+            save_user(chat_id, username, first_name)
 
             # /start
             if text == "/start":
@@ -198,12 +285,14 @@ while True:
             elif text == "📌Закреп📌":
                 send_post(chat_id)
 
-            # РАССЫЛКА
+            # ОБЫЧНАЯ РАССЫЛКА
             elif text.startswith("/send") and chat_id == ADMIN_ID:
+
                 msg = text.replace("/send", "").strip()
 
                 if msg:
                     total = broadcast_message(msg)
+
                     requests.post(
                         URL + "sendMessage",
                         data={
@@ -212,24 +301,85 @@ while True:
                         }
                     )
 
+            # COPYMESSAGE РАССЫЛКА
+            elif text == "/copy" and chat_id == ADMIN_ID:
+
+                total = broadcast_copy_message(
+                    chat_id,
+                    message_id - 1
+                )
+
+                requests.post(
+                    URL + "sendMessage",
+                    data={
+                        "chat_id": chat_id,
+                        "text": f"✅ CopyMessage рассылка отправлена: {total}"
+                    }
+                )
+
+            # ОТПРАВКА ПО ID
+            elif text.startswith("/sendid") and chat_id == ADMIN_ID:
+
+                parts = text.split(" ", 2)
+
+                if len(parts) >= 3:
+
+                    target_id = parts[1]
+                    msg = parts[2]
+
+                    ok = send_to_user(target_id, msg)
+
+                    if ok:
+                        result = "✅ Сообщение отправлено"
+                    else:
+                        result = "❌ Ошибка отправки"
+
+                    requests.post(
+                        URL + "sendMessage",
+                        data={
+                            "chat_id": chat_id,
+                            "text": result
+                        }
+                    )
+
+            # COPYMESSAGE ПО ID
+            elif text.startswith("/copymessageid") and chat_id == ADMIN_ID:
+
+                parts = text.split(" ")
+
+                if len(parts) >= 2:
+
+                    target_id = parts[1]
+
+                    ok = copy_message_to_user(
+                        target_id,
+                        chat_id,
+                        message_id - 1
+                    )
+
+                    if ok:
+                        result = "✅ CopyMessage отправлен"
+                    else:
+                        result = "❌ Ошибка отправки"
+
+                    requests.post(
+                        URL + "sendMessage",
+                        data={
+                            "chat_id": chat_id,
+                            "text": result
+                        }
+                    )
+
             # СТАТИСТИКА
             elif text == "/stats" and chat_id == ADMIN_ID:
+
                 count = get_stats()
+
                 requests.post(
                     URL + "sendMessage",
                     data={
                         "chat_id": chat_id,
                         "text": f"👥 Пользователей: {count}"
-                    }
-                )
-
-            # ❗ НЕПРАВИЛЬНЫЕ СООБЩЕНИЯ В ЛС
-            else:
-                requests.post(
-                    URL + "sendMessage",
-                    data={
-                        "chat_id": chat_id,
-                        "text": "Для начала работы нажмите /start"
                     }
                 )
 
