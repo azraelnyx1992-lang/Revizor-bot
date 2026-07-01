@@ -8,7 +8,7 @@ from datetime import datetime
 TOKEN = os.getenv("TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 URL = f"https://api.telegram.org/bot{TOKEN}/"
-ADMIN_ID = 8451584336
+ADMIN_ID = 8266036993
 offset = None
 start_time = datetime.now()
 
