@@ -8,7 +8,7 @@ from datetime import datetime
 TOKEN = os.getenv("TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 URL = f"https://api.telegram.org/bot{TOKEN}/"
-ADMIN_ID = 8266036993
+ADMIN_ID = 8248506377
 offset = None
 start_time = datetime.now()
 
@@ -96,7 +96,7 @@ def send_menu(chat_id):
         "Ты написал оригинальному боту лучшей ДНР площадки "
         "💀<b>Донецкий Ревизор</b>💀\n"
         "Проверь оригинальность на сайте\n"
-        "👉 Revizor.cc\n"
+        "👉 Rvzr.cc\n"
         "Для 100% результата введи сайт вручную в браузере.\n"
         "👇Нажми кнопку ниже чтобы получить доверенные магазины👇"
     )
@@ -115,9 +115,9 @@ def send_post(chat_id):
         "💀 <b>Донецкий Ревизор</b> 💀\n"
         "🌐 Все настоящие контакты на сайте 🌐\n"
         "⚠️ Не ведитесь на фейков ⚠️\n"
-        "📌 Revizor.cc 📌"
+        "📌 Rvzr.cc 📌"
     )
-    keyboard = {"inline_keyboard": [[{"text": "📎Revizor.cc📎", "url": "https://revizor.cc"}]]}
+    keyboard = {"inline_keyboard": [[{"text": "📎Rvzr.cc📎", "url": "https://revizor.cc"}]]}
     requests.post(URL + "sendPhoto", data={
         "chat_id": chat_id,
         "photo": "https://i.ibb.co/21crjLB5/IMG-20260522-221607-203.jpg",
