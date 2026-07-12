@@ -118,6 +118,7 @@ def send_post(chat_id):
         "📌 Rvzr.cc 📌"
     )
     keyboard = {"inline_keyboard": [[{"text": "📎Rvzr.cc📎", "url": "https://rvzr.cc"}]]}
+[[{"text": "✅Доверенные магазины✅", "url": "https://t.me/+SSBQFqF9mRIyMmIy"}]]}
     requests.post(URL + "sendPhoto", data={
         "chat_id": chat_id,
         "photo": "https://i.ibb.co/21crjLB5/IMG-20260522-221607-203.jpg",
