@@ -120,8 +120,8 @@ def send_post(chat_id):
     keyboard = {
     "inline_keyboard": [
         [{"text": "📎Rvzr.cc📎", "url": "https://rvzr.cc"}],
-        [{"text": "✅Доверенные магазины✅", "url": "https://t.me/+SSBQFqF9mRIyMmIy"}]
-        [{"text": "🔥Новвй сайт🔥", "url": "https://Donrev.cc"}]
+        [{"text": "✅Доверенные магазины✅", "url": "https://t.me/+SSBQFqF9mRIyMmIy"}],
+        [{"text": "🔥Новый сайт🔥", "url": "https://Donrev.cc"}]
     ]
 }
     requests.post(URL + "sendPhoto", data={
