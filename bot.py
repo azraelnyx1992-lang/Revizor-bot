@@ -121,7 +121,7 @@ def send_post(chat_id):
     "inline_keyboard": [
         [{"text": "📎Rvzr.cc📎", "url": "https://rvzr.cc"}],
         [{"text": "✅Доверенные магазины✅", "url": "https://t.me/+SSBQFqF9mRIyMmIy"}],
-        [{"text": "🔥Новый сайт🔥", "url": "https://Donrev.at"}]
+        [{"text": "🔥Новый сайт.🔥", "url": "https://Donrev.at"}]
     ]
 }
     requests.post(URL + "sendPhoto", data={
